@@ -3,18 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const path = require('path');
-const multer = require('multer');
-
-// Configure Multer
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
-});
-const upload = multer({ storage: storage });
+const { upload } = require('./config/cloudinary');
 
 const connectDB = require("./db");
 connectDB();
@@ -33,8 +22,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve uploads statically
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 
 // Routes
 app.get('/api/videos', getVideos);

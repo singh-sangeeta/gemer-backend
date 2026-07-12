@@ -7,8 +7,8 @@ const uploadStory = async (req, res) => {
     }
 
     const { mediaType, caption, songName } = req.body;
-    // Construct the URL to the uploaded file
-    const videoUrl = `/uploads/${req.file.filename}`;
+    // Get the Cloudinary URL from the uploaded file
+    const videoUrl = req.file.path;
 
     const newStory = new Story({
       user: req.user.id,
