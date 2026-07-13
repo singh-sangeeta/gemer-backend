@@ -132,11 +132,16 @@ const getUserProfile = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    let { bio, profilePicture, fullName, username, gender } = req.body;
+    let { bio, profilePictureUrl, fullName, username, gender } = req.body;
 
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
+    }
+
+    let profilePicture = profilePictureUrl;
+    if (req.file) {
+      profilePicture = req.file.path;
     }
 
     if (bio !== undefined) user.bio = bio;

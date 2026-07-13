@@ -29,7 +29,7 @@ app.get('/api/videos', getVideos);
 app.post('/api/auth/register', register);
 app.post('/api/auth/login', login);
 app.get('/api/auth/me', authMiddleware, getUserProfile);
-app.put('/api/auth/profile', authMiddleware, updateProfile);
+app.put('/api/auth/profile', authMiddleware, upload.single('profilePicture'), updateProfile);
 app.post('/api/auth/follow/:id', authMiddleware, followUser);
 
 // Stories
