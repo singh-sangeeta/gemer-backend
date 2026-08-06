@@ -1,31 +1,4 @@
-// const Video = require('./Video');
-
-const dummyVideos = [
-  {
-    _id: '1',
-    title: 'Epic Fortnite Snipe',
-    description: 'Unbelievable 360 no scope win!',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-    likes: 1204,
-    comments: 45
-  },
-  {
-    _id: '2',
-    title: 'Valorant Ace',
-    description: '1v5 clutch on Bind',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    likes: 3450,
-    comments: 112
-  },
-  {
-    _id: '3',
-    title: 'Minecraft Speedrun',
-    description: 'New world record attempt',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-    likes: 890,
-    comments: 23
-  }
-];
+const Video = require('./Video');
 
 const getVideos = async (req, res) => {
   try {
@@ -33,11 +6,55 @@ const getVideos = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const videos = dummyVideos.slice(skip, skip + limit);
+    const videos = await Video.find()
+      .populate('user', 'username profilePicture fullName')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
     res.json(videos);
   } catch (error) {
+    console.error('Error fetching videos:', error);
     res.status(500).json({ error: 'Server error fetching videos' });
   }
 };
 
-module.exports = { getVideos };
+const getUserVideos = async (req, res) => {
+  try {
+    const videos = await Video.find({ user: req.params.userId })
+      .populate('user', 'username profilePicture fullName')
+      .sort({ createdAt: -1 });
+    res.json(videos);
+  } catch (error) {
+    console.error('Error fetching user videos:', error);
+    res.status(500).json({ error: 'Server error fetching user videos' });
+  }
+};
+
+const uploadVideo = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No media file provided' });
+    }
+
+    const { title, description, mediaType } = req.body;
+    const videoUrl = req.file.path;
+
+    const newVideo = new Video({
+      user: req.user.id,
+      title: title || 'Untitled Post',
+      description: description || '',
+      videoUrl: videoUrl,
+      mediaType: mediaType || 'video',
+    });
+
+    await newVideo.save();
+
+    res.status(201).json({ message: 'Post created successfully', video: newVideo });
+  } catch (error) {
+    console.error('Post upload error:', error);
+    res.status(500).json({ error: 'Server error during upload' });
+  }
+};
+
+module.exports = { getVideos, getUserVideos, uploadVideo };
