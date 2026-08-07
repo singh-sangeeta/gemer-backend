@@ -2,6 +2,7 @@ const Post = require('./Post');
 const Like = require('./Like');
 const Comment = require('./Comment');
 const Notification = require('./Notification');
+const SavedPost = require('./SavedPost');
 
 exports.likePost = async (req, res) => {
   try {
@@ -119,6 +120,51 @@ exports.getComments = async (req, res) => {
       .populate('user', 'username fullName profilePicture')
       .sort({ createdAt: -1 });
     res.json(comments);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+exports.savePost = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post) return res.status(404).json({ error: 'Post not found' });
+
+    const existing = await SavedPost.findOne({ post: req.params.id, user: req.user.id });
+    if (existing) {
+      return res.status(400).json({ error: 'Post already saved' });
+    }
+
+    await SavedPost.create({ post: req.params.id, user: req.user.id });
+    res.json({ message: 'Post saved' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+exports.unsavePost = async (req, res) => {
+  try {
+    const saved = await SavedPost.findOneAndDelete({ post: req.params.id, user: req.user.id });
+    if (!saved) return res.status(400).json({ error: 'Post not saved' });
+    res.json({ message: 'Post unsaved' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+exports.getSavedPosts = async (req, res) => {
+  try {
+    const saved = await SavedPost.find({ user: req.user.id })
+      .populate({
+        path: 'post',
+        populate: { path: 'user', select: 'username fullName profilePicture' }
+      })
+      .sort({ createdAt: -1 });
+    
+    res.json(saved.map(s => s.post));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

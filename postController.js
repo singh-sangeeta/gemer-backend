@@ -165,3 +165,48 @@ exports.addView = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+exports.getExploreFeed = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 18;
+    const skip = (page - 1) * limit;
+
+    // Original Recommendation Engine for Explore
+    // Weights: Likes (2x), Comments (3x), Views (1x)
+    // We aggregate posts and calculate a score, then sort.
+    const posts = await Post.aggregate([
+      {
+        $addFields: {
+          engagementScore: {
+            $add: [
+              { $multiply: ["$likesCount", 2] },
+              { $multiply: ["$commentsCount", 3] },
+              "$viewsCount"
+            ]
+          }
+        }
+      },
+      { $sort: { engagementScore: -1, createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limit }
+    ]);
+
+    const populatedPosts = await Post.populate(posts, { path: 'user', select: 'username fullName profilePicture' });
+
+    // Check likes
+    const postIds = populatedPosts.map(p => p._id);
+    const likes = await Like.find({ user: req.user.id, post: { $in: postIds } });
+    const likedPostIds = new Set(likes.map(l => l.post.toString()));
+
+    const explorePosts = populatedPosts.map(post => ({
+      ...post,
+      isLikedByMe: likedPostIds.has(post._id.toString())
+    }));
+
+    res.json(explorePosts);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};

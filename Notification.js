@@ -3,8 +3,8 @@ const mongoose = require('mongoose');
 const notificationSchema = new mongoose.Schema({
   recipient: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  type: { type: String, enum: ['like', 'comment', 'follow'], required: true },
-  post: { type: mongoose.Schema.Types.ObjectId, ref: 'Post' }, // Optional, as follow doesn't have a post
+  type: { type: String, enum: ['like', 'comment', 'follow', 'follow_request', 'follow_accept', 'story_view'], required: true },
+  post: { type: mongoose.Schema.Types.ObjectId, ref: 'Post' }, // Optional
   isRead: { type: Boolean, default: false }
 }, { timestamps: true });
 
