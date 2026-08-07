@@ -1,5 +1,7 @@
 const Post = require('./Post');
 const View = require('./View');
+const Follow = require('./Follow');
+const Like = require('./Like');
 const { upload } = require('./config/cloudinary');
 
 // Upload single or multiple media? The setup might rely on Cloudinary uploader in route.
@@ -55,6 +57,44 @@ exports.getFeed = async (req, res) => {
       .limit(limit);
 
     res.json(posts);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+exports.getHomeFeed = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const followingDocs = await Follow.find({ follower: req.user.id }).select('following');
+    const followingIds = followingDocs.map(f => f.following);
+
+    if (followingIds.length === 0) {
+      return res.json([]);
+    }
+
+    const posts = await Post.find({ user: { $in: followingIds } })
+      .populate('user', 'username fullName profilePicture')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    // Check likes for current user
+    const postIds = posts.map(p => p._id);
+    const likes = await Like.find({ user: req.user.id, post: { $in: postIds } });
+    const likedPostIds = new Set(likes.map(l => l.post.toString()));
+
+    const feedPosts = posts.map(post => ({
+      ...post,
+      isLikedByMe: likedPostIds.has(post._id.toString()),
+      isFollowedByMe: true // Since we only fetched following posts
+    }));
+
+    res.json(feedPosts);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

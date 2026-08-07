@@ -42,6 +42,7 @@ app.post('/api/auth/follow/:id', authMiddleware, followUser);
 // Posts
 app.post('/api/posts', authMiddleware, upload.array('media', 10), postController.createPost);
 app.get('/api/posts/feed', authMiddleware, postController.getFeed);
+app.get('/api/feed', authMiddleware, postController.getHomeFeed);
 app.get('/api/posts/user/:id', authMiddleware, postController.getUserPosts);
 app.get('/api/posts/:id', authMiddleware, postController.getPost);
 app.delete('/api/posts/:id', authMiddleware, postController.deletePost);
