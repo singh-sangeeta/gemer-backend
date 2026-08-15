@@ -90,6 +90,15 @@ app.get('/api/stories/user/:userId/all', authMiddleware, storyController.getUser
 app.post('/api/reels', authMiddleware, upload.single('video'), reelsController.createReel);
 app.get('/api/reels', authMiddleware, reelsController.getReels);
 
+// Static file serving for local uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: err.message || 'Internal Server Error' });
+});
+
 app.listen(process.env.PORT || 5000, () => {
-  console.log("Server Running");
+  console.log("Server Running on port " + (process.env.PORT || 5000));
 }); 

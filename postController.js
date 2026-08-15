@@ -76,19 +76,44 @@ exports.getHomeFeed = async (req, res) => {
       return res.json([]);
     }
 
-    const posts = await Post.find({ user: { $in: followingIds } })
-      .populate('user', 'username fullName profilePicture')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+    const posts = await Post.aggregate([
+      { $match: { user: { $in: followingIds } } },
+      {
+        $addFields: {
+          engagementScore: {
+            $add: [
+              { $multiply: ["$likesCount", 2] },
+              { $multiply: ["$commentsCount", 3] },
+              "$viewsCount"
+            ]
+          },
+          // Recency score: Higher for more recent posts
+          recencyScore: {
+            $divide: [
+              100000000000,
+              { $add: [{ $subtract: [new Date(), "$createdAt"] }, 1] } // Add 1 to avoid div by zero
+            ]
+          }
+        }
+      },
+      {
+        $addFields: {
+          finalScore: { $add: ["$engagementScore", "$recencyScore"] }
+        }
+      },
+      { $sort: { finalScore: -1, createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limit }
+    ]);
+
+    const populatedPosts = await Post.populate(posts, { path: 'user', select: 'username fullName profilePicture' });
 
     // Check likes for current user
-    const postIds = posts.map(p => p._id);
+    const postIds = populatedPosts.map(p => p._id);
     const likes = await Like.find({ user: req.user.id, post: { $in: postIds } });
     const likedPostIds = new Set(likes.map(l => l.post.toString()));
 
-    const feedPosts = posts.map(post => ({
+    const feedPosts = populatedPosts.map(post => ({
       ...post,
       isLikedByMe: likedPostIds.has(post._id.toString()),
       isFollowedByMe: true // Since we only fetched following posts
