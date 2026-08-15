@@ -15,13 +15,13 @@ exports.createPost = async (req, res) => {
     if (req.files && req.files.length > 0) {
       req.files.forEach(file => {
         media.push({
-          url: file.path,
+          url: file.path.startsWith('http') ? file.path : '/uploads/' + file.filename,
           type: file.mimetype.startsWith('video') ? 'video' : 'image'
         });
       });
     } else if (req.file) {
       media.push({
-        url: req.file.path,
+        url: req.file.path.startsWith('http') ? req.file.path : '/uploads/' + req.file.filename,
         type: req.file.mimetype.startsWith('video') ? 'video' : 'image'
       });
     }

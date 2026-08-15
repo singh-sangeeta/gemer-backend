@@ -13,7 +13,7 @@ exports.createReel = async (req, res) => {
 
     const reel = new Reel({
       user: req.user.id,
-      videoUrl: req.file.path,
+      videoUrl: req.file.path.startsWith('http') ? req.file.path : '/uploads/' + req.file.filename,
       caption,
       hashtags: hashtags ? JSON.parse(hashtags) : []
     });

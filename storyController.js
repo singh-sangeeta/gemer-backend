@@ -11,7 +11,7 @@ const uploadStory = async (req, res) => {
     }
 
     const { mediaType, caption, songName } = req.body;
-    const videoUrl = req.file.path;
+    const videoUrl = req.file.path.startsWith('http') ? req.file.path : '/uploads/' + req.file.filename;
 
     const newStory = new Story({
       user: req.user.id,

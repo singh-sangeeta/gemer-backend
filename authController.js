@@ -141,7 +141,7 @@ const updateProfile = async (req, res) => {
 
     let profilePicture = profilePictureUrl;
     if (req.file) {
-      profilePicture = req.file.path;
+      profilePicture = req.file.path.startsWith('http') ? req.file.path : '/uploads/' + req.file.filename;
     }
 
     if (bio !== undefined) user.bio = bio;
